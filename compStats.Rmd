@@ -1,0 +1,239 @@
+---
+title: "COVID-19"
+author: "Katie Forthman"
+date: "4/10/2020"
+output: html_document
+---
+
+# ---- Load packages ----
+
+```{r}
+library(stringr)
+library(corrplot)
+```
+
+
+# ---- Load neighborhood data ----
+
+```{r}
+neigh_data <- read.csv("../Neighborhood_Analysis/Tract/output/2015/5 factors/FA_5Factors.csv", row.names = 1)
+rownames(neigh_data) <- str_pad(as.character(rownames(neigh_data)), 11, "left", pad = "0")
+
+head(neigh_data)
+```
+
+
+# ---- Avg by county ----
+
+```{r}
+countyName <- read.csv("../Neighborhood_Analysis/Tract/data/county_code.csv")
+countyCodes <- cbind(str_pad(as.character(countyName[,2]), 2, "left", pad = "0"),
+                     str_pad(as.character(countyName[,3]), 3, "left", pad = "0"))
+
+county_avg <- matrix(nrow = dim(countyCodes)[1], ncol = 5)
+colnames(county_avg) <- colnames(neigh_data)
+for(j in 1:(dim(countyCodes)[1])){
+  data <- neigh_data[which(substr(rownames(neigh_data), 1,2) == countyCodes[j,1]), ]
+  data <- data[which(substr(rownames(data), 3,5) == countyCodes[j,2]), ]
+  
+  if(is.null(dim(data))){
+    county_avg[j,] <-data
+  }else{
+    county_avg[j,] <- apply(data, 2, mean)
+  }
+  
+}
+
+county_factors <- data.frame(ID = apply(countyCodes, 1, paste, collapse = ""), county_avg)
+
+head(county_factors)
+```
+
+
+# ---- Load  and format covid data ----
+
+```{r}
+data.path <- "Data/COVID-19/csse_covid_19_data/csse_covid_19_time_series/"
+
+# Read in the data
+US.deaths <- read.csv(
+  paste0(data.path, "time_series_covid19_deaths_US.csv"), 
+  header = T, stringsAsFactors = F)
+US.cases <- read.csv(
+  paste0(data.path, "time_series_covid19_confirmed_US.csv"), 
+  header = T, stringsAsFactors = F)
+
+# Read in the header seprately.
+US.cases.head <- read.csv(
+  paste0(data.path, "time_series_covid19_confirmed_US.csv"), 
+  header = F, stringsAsFactors = F)[1,]
+US.deaths.head <- read.csv(
+  paste0(data.path, "time_series_covid19_deaths_US.csv"), 
+  header = F, stringsAsFactors = F)[1,]
+
+# Correct the dates in the header to be more useable as
+# column names.
+proper_date <- function(dates){
+  dates <- sapply(dates, strsplit, split = "/")
+  dates <- lapply(dates, str_pad, width = 2, side = "left", pad = "0")
+  dates <- lapply(dates, paste, collapse = "_")
+  dates <- unlist(dates)
+  
+  return(dates)
+}
+
+dates.cases <- proper_date(US.cases.head[-c(1:11)])
+dates.deaths <- proper_date(US.deaths.head[-c(1:12)])
+
+names(US.cases) <- c(US.cases.head[1,1:11], dates.cases)
+names(US.deaths) <- c(US.deaths.head[1,1:12], dates.deaths)
+
+if(sum(US.cases$UID != US.deaths$UID) > 0){warning("COVID data rows do not match!")}
+US.cases$Population <- US.deaths$Population
+US.cases <- US.cases[,c(1:11, ncol(US.cases), 12:(ncol(US.cases)-1))]
+
+head(US.cases)
+```
+
+
+## Split the dataset into the data and the info for usability.
+```{r}
+US.cases.info <- as.matrix(US.cases[,1:12])
+US.cases.data <- as.matrix(US.cases[,-c(2:12)])
+US.deaths.info <- as.matrix(US.deaths[,1:12])
+US.deaths.data <- as.matrix(US.deaths[,-c(2:12)])
+
+rownames(US.cases.info) <- US.cases.info[,1]
+US.cases.info <- US.cases.info[,-1]
+rownames(US.cases.data) <- US.cases.data[,1]
+US.cases.data <- US.cases.data[,-1]
+rownames(US.deaths.info) <- US.deaths.info[,1]
+US.deaths.info <- US.deaths.info[,-1]
+rownames(US.deaths.data) <- US.deaths.data[,1]
+US.deaths.data <- US.deaths.data[,-1]
+
+
+ndays.cases <- ncol(US.cases.data)
+ndays.deaths <- ncol(US.deaths.data)
+
+nobs <- nrow(US.cases.data)
+
+head(US.cases.data)
+```
+
+
+# ---- Personal Interest Plots ----
+
+```{r}
+US.cases.data.OK <- US.cases.data[which(US.cases$Province_State == "Oklahoma"),]
+US.cases.data.OK.sum <- colSums(US.cases.data.OK)
+barplot(US.cases.data.OK.sum, main = "Total Cases of COVID-19 by Date in Oklahoma", las = 2, cex.axis = 1, cex.names = 0.5)
+
+US.deaths.data.OK <- US.deaths.data[which(US.deaths$Province_State == "Oklahoma"),]
+US.deaths.data.OK.sum <- colSums(US.deaths.data.OK)
+barplot(US.deaths.data.OK.sum, main = "Total Deaths by COVID-19 by Date in Oklahoma", las = 2, cex.axis = 1, cex.names = 0.5)
+
+US.cases.data.Tulsa <- US.cases.data[which(US.cases$Admin2 == "Tulsa"),]
+barplot(US.cases.data.Tulsa, main = "Total Cases of COVID-19 by Date in Tulsa", las = 2, cex.axis = 1, cex.names = 0.5)
+
+US.deaths.data.Tulsa <- US.deaths.data[which(US.deaths$Admin2 == "Tulsa"),]
+barplot(US.deaths.data.Tulsa, main = "Total Deaths by COVID-19 by Date in Tulsa", las = 2, cex.axis = 1, cex.names = 0.5)
+```
+
+
+# ---- Calculate some useful stats to compare with neighborhood data ----
+
+```{r}
+US.stats <- data.frame(UID = US.cases$UID)
+```
+
+## Average rise in cases per day
+avg.rise.cases
+```{r}
+rise.cases <- matrix(ncol = ndays.cases - 1, nrow = nobs)
+colnames(rise.cases) <- colnames(US.cases.data)[-1]
+for(i in 1:ncol(rise.cases) + 1){
+  rise <- US.cases.data[,i] - US.cases.data[,i-1]
+  rise.cases[,i-1] <- rise
+}
+
+US.stats$avg.rise.cases <- apply(rise.cases, 1, mean)
+
+rise.cases.total <- colSums(rise.cases)
+barplot(rise.cases.total, main = "Rise in Cases of COVID-19 by Date in US", las = 2, cex.axis = 1, cex.names = 0.5)
+```
+
+## Average rise in deaths per day
+avg.rise.deaths
+```{r}
+rise.deaths <- matrix(ncol = ndays.deaths - 1, nrow = nobs)
+colnames(rise.deaths) <- colnames(US.deaths.data)[-1]
+for(i in 1:ncol(rise.deaths) + 1){
+  rise <- US.deaths.data[,i] - US.deaths.data[,i-1]
+  rise.deaths[,i-1] <- rise
+}
+
+US.stats$avg.rise.deaths <- apply(rise.deaths, 1, mean)
+
+rise.deaths.total <- colSums(rise.deaths)
+barplot(rise.deaths.total, main = "Rise in Deaths of COVID-19 by Date in US", las = 2, cex.axis = 1, cex.names = 0.5)
+```
+
+## Total cases
+total.cases
+```{r}
+US.stats$total.cases <- US.cases.data[,ndays.cases]
+
+hist(US.stats$total.cases)
+```
+
+## Total cases per capita
+```{r}
+US.stats$total.cases.percap <- US.stats$total.cases / US.cases$Population
+```
+
+## Total deaths
+total.deaths
+```{r}
+US.stats$total.deaths <- US.deaths.data[,ndays.deaths]
+hist(US.stats$total.deaths)
+```
+
+## Total deaths per capita
+total.deaths.percap
+```{r}
+US.stats$total.deaths.percap <- US.stats$total.deaths / US.deaths$Population
+```
+
+## Total deaths per case
+total.deaths.percase
+```{r}
+# pos.case.ind <- US.stats$total.cases > 0
+# US.stats$total.deaths.percase[pos.case.ind] <- US.stats$total.deaths[pos.case.ind] / US.stats$total.cases[pos.case.ind]
+# US.stats$total.deaths.percase[!pos.case.ind] <- 0
+US.stats$total.deaths.percase <- US.stats$total.deaths / US.stats$total.cases
+hist(US.stats$total.deaths.percase)
+```
+
+
+# ---- Merge COVID data with Neighborhood data ----
+
+```{r}
+US.stats$ID <- str_pad(US.stats$UID, 8, "left", pad = "0")
+US.stats$ID <- substr(US.stats$ID, 4, 8)
+
+neigh_data$ID <- rownames(neigh_data)
+neigh_data$ID <- substr(neigh_data$ID, 1, 5)
+
+data.merge <- merge(US.stats, county_factors, by = "ID")
+
+head(data.merge)
+```
+
+
+# ---- Plot the relationships ----
+
+```{r}
+data.cor <- cor(data.merge[,-c(1:2)], use = "complete.obs", method = "spearman")
+corrplot(data.cor)
+```
