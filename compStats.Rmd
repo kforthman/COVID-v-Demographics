@@ -125,6 +125,14 @@ head(US.cases.data)
 # ---- Personal Interest Plots ----
 
 ```{r}
+US.cases.data.OK <- US.cases.data[which(US.cases$Province_State == "New York"),]
+US.cases.data.OK.sum <- colSums(US.cases.data.OK)
+barplot(US.cases.data.OK.sum, main = "Total Cases of COVID-19 by Date in New York", las = 2, cex.axis = 1, cex.names = 0.5)
+
+US.deaths.data.OK <- US.deaths.data[which(US.deaths$Province_State == "New York"),]
+US.deaths.data.OK.sum <- colSums(US.deaths.data.OK)
+barplot(US.deaths.data.OK.sum, main = "Total Deaths by COVID-19 by Date in New York", las = 2, cex.axis = 1, cex.names = 0.5)
+
 US.cases.data.OK <- US.cases.data[which(US.cases$Province_State == "Oklahoma"),]
 US.cases.data.OK.sum <- colSums(US.cases.data.OK)
 barplot(US.cases.data.OK.sum, main = "Total Cases of COVID-19 by Date in Oklahoma", las = 2, cex.axis = 1, cex.names = 0.5)
