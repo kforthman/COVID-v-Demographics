@@ -19,7 +19,6 @@ library(corrplot)
 neigh_data <- read.csv("../Neighborhood_Analysis/Tract/output/2015/5 factors/FA_5Factors.csv", row.names = 1)
 rownames(neigh_data) <- str_pad(as.character(rownames(neigh_data)), 11, "left", pad = "0")
 
-head(neigh_data)
 ```
 
 
@@ -45,8 +44,6 @@ for(j in 1:(dim(countyCodes)[1])){
 }
 
 county_factors <- data.frame(ID = apply(countyCodes, 1, paste, collapse = ""), county_avg)
-
-head(county_factors)
 ```
 
 
@@ -91,8 +88,6 @@ names(US.deaths) <- c(US.deaths.head[1,1:12], dates.deaths)
 if(sum(US.cases$UID != US.deaths$UID) > 0){warning("COVID data rows do not match!")}
 US.cases$Population <- US.deaths$Population
 US.cases <- US.cases[,c(1:11, ncol(US.cases), 12:(ncol(US.cases)-1))]
-
-head(US.cases)
 ```
 
 
@@ -117,12 +112,10 @@ ndays.cases <- ncol(US.cases.data)
 ndays.deaths <- ncol(US.deaths.data)
 
 nobs <- nrow(US.cases.data)
-
-head(US.cases.data)
 ```
 
 
-# ---- Personal Interest Plots ----
+# ---- The Curve ----
 
 ```{r}
 US.cases.data.OK <- US.cases.data[which(US.cases$Province_State == "New York"),]
@@ -234,8 +227,6 @@ neigh_data$ID <- rownames(neigh_data)
 neigh_data$ID <- substr(neigh_data$ID, 1, 5)
 
 data.merge <- merge(US.stats, county_factors, by = "ID")
-
-head(data.merge)
 ```
 
 
