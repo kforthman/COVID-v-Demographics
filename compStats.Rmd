@@ -1,7 +1,7 @@
 ---
 title: "COVID-19"
 author: "Katie Forthman"
-date: "4/10/2020"
+date: "`r date()`"
 output: html_document
 ---
 
@@ -12,6 +12,13 @@ library(stringr)
 library(corrplot)
 ```
 
+# ---- Pull any new data ----
+
+```{r}
+
+system("cd Data/COVID-19 ; git pull")
+
+```
 
 # ---- Load neighborhood data ----
 
