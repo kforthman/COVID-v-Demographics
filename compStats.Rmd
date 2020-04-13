@@ -12,45 +12,12 @@ library(stringr)
 library(corrplot)
 ```
 
-# ---- Pull any new data ----
-
-```{r}
-
-system("cd Data/COVID-19 ; git pull")
-
-```
-
 # ---- Load neighborhood data ----
 
 ```{r}
-neigh_data <- read.csv("../Neighborhood_Analysis/Tract/output/2015/5 factors/FA_5Factors.csv", row.names = 1)
-rownames(neigh_data) <- str_pad(as.character(rownames(neigh_data)), 11, "left", pad = "0")
 
-```
+load("Data/county_factors.rda")
 
-
-# ---- Avg by county ----
-
-```{r}
-countyName <- read.csv("../Neighborhood_Analysis/Tract/data/county_code.csv")
-countyCodes <- cbind(str_pad(as.character(countyName[,2]), 2, "left", pad = "0"),
-                     str_pad(as.character(countyName[,3]), 3, "left", pad = "0"))
-
-county_avg <- matrix(nrow = dim(countyCodes)[1], ncol = 5)
-colnames(county_avg) <- colnames(neigh_data)
-for(j in 1:(dim(countyCodes)[1])){
-  data <- neigh_data[which(substr(rownames(neigh_data), 1,2) == countyCodes[j,1]), ]
-  data <- data[which(substr(rownames(data), 3,5) == countyCodes[j,2]), ]
-  
-  if(is.null(dim(data))){
-    county_avg[j,] <-data
-  }else{
-    county_avg[j,] <- apply(data, 2, mean)
-  }
-  
-}
-
-county_factors <- data.frame(ID = apply(countyCodes, 1, paste, collapse = ""), county_avg)
 ```
 
 
@@ -229,9 +196,6 @@ hist(US.stats$total.deaths.percase)
 ```{r}
 US.stats$ID <- str_pad(US.stats$UID, 8, "left", pad = "0")
 US.stats$ID <- substr(US.stats$ID, 4, 8)
-
-neigh_data$ID <- rownames(neigh_data)
-neigh_data$ID <- substr(neigh_data$ID, 1, 5)
 
 data.merge <- merge(US.stats, county_factors, by = "ID")
 ```
