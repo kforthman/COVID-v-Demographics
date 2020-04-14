@@ -158,26 +158,28 @@ barplot(rise.deaths.total, main = "Rise in Deaths of COVID-19 by Date in US", la
 total.cases
 ```{r}
 US.stats$total.cases <- US.cases.data[,ndays.cases]
-
-hist(US.stats$total.cases)
 ```
 
 ## Total cases per capita
 ```{r}
 US.stats$total.cases.percap <- US.stats$total.cases / US.cases$Population
+US.stats$total.cases.percap[US.cases$Population == 0] <- NA
+hist(US.stats$total.cases.percap)
 ```
 
 ## Total deaths
 total.deaths
 ```{r}
 US.stats$total.deaths <- US.deaths.data[,ndays.deaths]
-hist(US.stats$total.deaths)
 ```
 
 ## Total deaths per capita
 total.deaths.percap
 ```{r}
 US.stats$total.deaths.percap <- US.stats$total.deaths / US.deaths$Population
+US.stats$total.deaths.percap[US.deaths$Population == 0] <- NA
+
+max(US.stats$total.deaths.percap,na.rm = T)
 ```
 
 ## Total deaths per case
@@ -187,7 +189,10 @@ total.deaths.percase
 # US.stats$total.deaths.percase[pos.case.ind] <- US.stats$total.deaths[pos.case.ind] / US.stats$total.cases[pos.case.ind]
 # US.stats$total.deaths.percase[!pos.case.ind] <- 0
 US.stats$total.deaths.percase <- US.stats$total.deaths / US.stats$total.cases
-hist(US.stats$total.deaths.percase)
+US.stats$total.deaths.percase[US.stats$total.cases == 0] <- NA
+
+US.stats[which(US.stats$total.deaths > US.stats$total.cases),]
+
 ```
 
 
