@@ -92,27 +92,47 @@ nobs <- nrow(US.cases.data)
 # ---- The Curve ----
 
 ```{r}
-US.cases.data.OK <- US.cases.data[which(US.cases$Province_State == "New York"),]
-US.cases.data.OK.sum <- colSums(US.cases.data.OK)
-barplot(US.cases.data.OK.sum, main = "Total Cases of COVID-19 by Date in New York", las = 2, cex.axis = 1, cex.names = 0.5)
+state.curve <- function(state, stat = c("cases", "deaths")){
+  if(stat == "cases"){
+    data <- US.cases.data[which(US.cases$Province_State == state),]
+  }else if(stat == "deaths"){
+    data <- US.deaths.data[which(US.deaths$Province_State == state),]
+  }
+  data.sum <- colSums(data)
+  day.first.case <- min(which(data.sum > 0))
+  n.days <- length(data.sum)
+  barplot(data.sum[day.first.case:n.days], 
+          main = paste0("Total COVID-19 ", stat," by date in ", state), 
+          log = "y", las = 2, cex.axis = 1, cex.names = 0.5)
+}
 
-US.deaths.data.OK <- US.deaths.data[which(US.deaths$Province_State == "New York"),]
-US.deaths.data.OK.sum <- colSums(US.deaths.data.OK)
-barplot(US.deaths.data.OK.sum, main = "Total Deaths by COVID-19 by Date in New York", las = 2, cex.axis = 1, cex.names = 0.5)
+state.curve("New York", "cases")
+state.curve("New York", "deaths")
 
-US.cases.data.OK <- US.cases.data[which(US.cases$Province_State == "Oklahoma"),]
-US.cases.data.OK.sum <- colSums(US.cases.data.OK)
-barplot(US.cases.data.OK.sum, main = "Total Cases of COVID-19 by Date in Oklahoma", las = 2, cex.axis = 1, cex.names = 0.5)
+state.curve("California", "cases")
+state.curve("California", "deaths")
 
-US.deaths.data.OK <- US.deaths.data[which(US.deaths$Province_State == "Oklahoma"),]
-US.deaths.data.OK.sum <- colSums(US.deaths.data.OK)
-barplot(US.deaths.data.OK.sum, main = "Total Deaths by COVID-19 by Date in Oklahoma", las = 2, cex.axis = 1, cex.names = 0.5)
+state.curve("Oklahoma", "cases")
+state.curve("Oklahoma", "deaths")
+```
 
-US.cases.data.Tulsa <- US.cases.data[which(US.cases$Admin2 == "Tulsa"),]
-barplot(US.cases.data.Tulsa, main = "Total Cases of COVID-19 by Date in Tulsa", las = 2, cex.axis = 1, cex.names = 0.5)
+```{r}
+county.curve <- function(county, stat = c("cases", "deaths")){
+  if(stat == "cases"){
+    data <- US.cases.data[which(US.cases$Admin2 == county),]
+  }else if(stat == "deaths"){
+    data <- US.deaths.data[which(US.deaths$Admin2 == county),]
+  }
+  
+  day.first.case <- min(which(data > 0))
+  n.days <- length(data)
+  
+barplot(data[day.first.case:n.days], main = paste0("Total COVID-19 ", stat," by date in ", county), log = "y", las = 2, cex.axis = 1, cex.names = 0.5)
+  
+}
 
-US.deaths.data.Tulsa <- US.deaths.data[which(US.deaths$Admin2 == "Tulsa"),]
-barplot(US.deaths.data.Tulsa, main = "Total Deaths by COVID-19 by Date in Tulsa", las = 2, cex.axis = 1, cex.names = 0.5)
+county.curve("Tulsa", "cases")
+county.curve("Tulsa", "deaths")
 ```
 
 
