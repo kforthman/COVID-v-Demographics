@@ -230,5 +230,10 @@ data.merge <- merge(US.stats, county_factors, by = "ID")
 
 ```{r}
 data.cor <- cor(data.merge[,-c(1:2)], use = "complete.obs", method = "spearman")
-corrplot(data.cor)
+corrplot.mixed(data.cor, upper = 'ellipse', lower = 'number', tl.pos = 'lt', tl.cex = 1, lower.col = "black", number.cex = 0.5)
 ```
+
+
+
+
+
