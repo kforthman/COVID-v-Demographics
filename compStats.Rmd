@@ -155,7 +155,11 @@ for(i in 1:ncol(rise.cases) + 1){
 US.stats$avg.rise.cases <- apply(rise.cases, 1, mean)
 
 rise.cases.total <- colSums(rise.cases)
-barplot(rise.cases.total, main = "Rise in Cases of COVID-19 by Date in US", las = 2, cex.axis = 1, cex.names = 0.5)
+
+day.first.case <- min(which(rise.cases.total > 0))
+n.days <- length(rise.cases.total)
+
+barplot(rise.cases.total[day.first.case:n.days], main = "Rise in Cases of COVID-19 by Date in US", las = 2, cex.axis = 1, cex.names = 0.5)
 ```
 
 ## Average rise in deaths per day
@@ -171,7 +175,11 @@ for(i in 1:ncol(rise.deaths) + 1){
 US.stats$avg.rise.deaths <- apply(rise.deaths, 1, mean)
 
 rise.deaths.total <- colSums(rise.deaths)
-barplot(rise.deaths.total, main = "Rise in Deaths of COVID-19 by Date in US", las = 2, cex.axis = 1, cex.names = 0.5)
+
+day.first.case <- min(which(rise.deaths.total > 0))
+n.days <- length(rise.deaths.total)
+
+barplot(rise.deaths.total[day.first.case:n.days], main = "Rise in Deaths of COVID-19 by Date in US", las = 2, cex.axis = 1, cex.names = 0.5)
 ```
 
 ## Total cases
