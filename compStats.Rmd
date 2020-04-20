@@ -5,6 +5,11 @@ date: "`r date()`"
 output: html_document
 ---
 
+```{r}
+#remove scientific notation
+options(scipen=999)
+```
+
 # ---- Load packages ----
 
 ```{r}
@@ -142,6 +147,27 @@ county.curve("Tulsa", "deaths")
 US.stats <- data.frame(UID = US.cases$UID)
 ```
 
+```{r}
+cases.total <- colSums(US.cases.data)
+
+day.first.case <- min(which(cases.total > 100))
+n.days <- length(cases.total)
+
+par(mar = c(5,5,4,2))
+barplot(cases.total[day.first.case:n.days], main = "Total COVID-19 cases by Date in US", las = 2, cex.axis = 1, cex.names = 0.5)
+barplot(cases.total[day.first.case:n.days], main = "Total COVID-19 cases by Date in US, log scale", las = 2, cex.axis = 1, cex.names = 0.5, log = "y")
+```
+
+```{r}
+deaths.total <- colSums(US.deaths.data)
+
+day.first.case <- min(which(deaths.total > 0))
+n.days <- length(deaths.total)
+
+barplot(deaths.total[day.first.case:n.days], main = "Total COVID-19 deaths by Date in US", las = 2, cex.axis = 1, cex.names = 0.5)
+barplot(deaths.total[day.first.case:n.days], main = "Total COVID-19 deaths by Date in US, log scale", las = 2, cex.axis = 1, cex.names = 0.5, log = "y")
+```
+
 ## Average rise in cases per day
 avg.rise.cases
 ```{r}
@@ -212,6 +238,7 @@ max(US.stats$total.deaths.percap,na.rm = T)
 
 ## Total deaths per case
 total.deaths.percase
+*Error in Johns Hopkins data has rows with total.deaths > total.cases.*
 ```{r}
 # pos.case.ind <- US.stats$total.cases > 0
 # US.stats$total.deaths.percase[pos.case.ind] <- US.stats$total.deaths[pos.case.ind] / US.stats$total.cases[pos.case.ind]
