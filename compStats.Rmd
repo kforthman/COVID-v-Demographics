@@ -284,9 +284,13 @@ data.merge2 <- merge(data.merge, county_500CitiesData, by = "ID", all.x = F)
 
 # ---- Plot the relationships ----
 
-```{r, fig.width=10}
+```{r, fig.width=15, fig.height=15}
 data.cor2 <- cor(data.merge2[,-c(1:2)], use = "complete.obs", method = "spearman")
 corrplot.mixed(data.cor2, upper = 'ellipse', lower = 'number', tl.pos = 'lt', tl.cex = 1, lower.col = "black", number.cex = 0.5)
+corrplot.mixed(data.cor2[1:7,8:42], upper = 'ellipse', lower = 'number', tl.pos = 'lt', tl.cex = 0.5, lower.col = "black", number.cex = 0.25)
+```
+
+```{r}
 corrplot.mixed(data.cor2[1:7,8:42], upper = 'ellipse', lower = 'number', tl.pos = 'lt', tl.cex = 1, lower.col = "black", number.cex = 0.5)
 ```
 
