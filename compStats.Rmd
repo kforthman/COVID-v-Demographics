@@ -10,6 +10,14 @@ output: html_document
 options(scipen=999)
 ```
 
+```{r, include=FALSE}
+# cd Data/COVID-19 ; git pull ; cd ../../
+# compile
+# git add compStats.html ; git commit -m "Updating data." ; git push origin master
+# 
+# 
+```
+
 # ---- Load packages ----
 
 ```{r}
@@ -22,6 +30,7 @@ library(corrplot)
 ```{r}
 
 load("Data/county_factors.rda")
+load("Data/county_500CitiesData.rda")
 
 ```
 
@@ -268,7 +277,18 @@ data.cor <- cor(data.merge[,-c(1:2)], use = "complete.obs", method = "spearman")
 corrplot.mixed(data.cor, upper = 'ellipse', lower = 'number', tl.pos = 'lt', tl.cex = 1, lower.col = "black", number.cex = 0.5)
 ```
 
+```{r}
+data.merge2 <- merge(data.merge, county_500CitiesData, by = "ID", all.x = F)
+```
 
+
+# ---- Plot the relationships ----
+
+```{r, fig.width=10}
+data.cor2 <- cor(data.merge2[,-c(1:2)], use = "complete.obs", method = "spearman")
+corrplot.mixed(data.cor2, upper = 'ellipse', lower = 'number', tl.pos = 'lt', tl.cex = 1, lower.col = "black", number.cex = 0.5)
+corrplot.mixed(data.cor2[1:7,8:42], upper = 'ellipse', lower = 'number', tl.pos = 'lt', tl.cex = 1, lower.col = "black", number.cex = 0.5)
+```
 
 
 

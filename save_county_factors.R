@@ -48,11 +48,12 @@ for(j in 1:(dim(countyCodes)[1])){
   if(is.null(dim(data))){
     county_avg[j,] <-data
   }else{
-    county_avg[j,] <- apply(data, 2, mean)
+    county_avg[j,] <- apply(data, 2, sum)
   }
   
 }
 
-county_factors <- data.frame(ID = apply(countyCodes[,1:2], 1, paste, collapse = ""), county_avg)
+county_factors <- data.frame(ID = apply(countyCodes[,1:2], 1, paste, collapse = ""), county_avg,
+                             pop = countyCodes$pop)
 
 save(county_factors, file = "Data/county_factors.rda")
