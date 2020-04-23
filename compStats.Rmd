@@ -23,6 +23,7 @@ options(scipen=999)
 ```{r}
 library(stringr)
 library(corrplot)
+library(shiny)
 ```
 
 # ---- Load neighborhood data ----
@@ -78,6 +79,80 @@ US.cases$Population <- US.deaths$Population
 US.cases <- US.cases[,c(1:11, ncol(US.cases), 12:(ncol(US.cases)-1))]
 ```
 
+## Other stats within the daily reports
+```{r}
+data.path <- "Data/COVID-19/csse_covid_19_data/csse_covid_19_daily_reports_us/"
+daily_filenames <- list.files(data.path)
+daily_filenames <- daily_filenames[daily_filenames != "README.md"]
+
+todays_report_filename <- daily_filenames[length(daily_filenames)]
+US.todaysReport <- read.csv(
+  paste0(data.path, todays_report_filename), 
+  header = T, stringsAsFactors = F)
+
+compileStats <- function(state, stat){
+  day <- substring(daily_filenames,1,10)
+  dailystat <- data.frame(day = day, stat = NA)
+  for(i in 1:length(daily_filenames)){
+    daysReport <- read.csv(
+      paste0(data.path, daily_filenames[i]),
+      header = T, stringsAsFactors = F)
+    dailystat[i,"stat"] <- daysReport[daysReport$Province_State == state, stat]
+  }
+  return(dailystat)
+}
+```
+
+## Functions for compiling and visualizing stats in the daily reports.
+```{r}
+plot.dailyStat <- function(state, stat){
+  data <- compileStats(state, stat)
+  barplot(data$stat, names.arg = data$day, main = paste0(state, " ", stat), las = 2, cex.axis = 1, cex.names = 0.5)
+}
+
+plot.dailyStatRise <- function(state, stat){
+  data <- compileStats(state, stat)
+  
+  rise.stat <- matrix(ncol = nrow(data) - 1, nrow = 1)
+  colnames(rise.stat) <- data$day[-1]
+  for(i in 1:ncol(rise.stat) + 1){
+    rise <- data$stat[i] - data$stat[i-1]
+    rise.stat[i-1] <- rise
+  }
+  
+  barplot(rise.stat, main = paste0(state, " rise in ",stat), las = 2, cex.axis = 1, cex.names = 0.5)
+}
+```
+
+## Testing
+*People_Tested* - Total number of people who have been tested.
+*Testing_Rate* - Total number of people tested per 100,000 persons.
+```{r}
+plot.dailyStat("Oklahoma", "People_Tested")
+plot.dailyStatRise("Oklahoma", "People_Tested")
+
+plot.dailyStat("Oklahoma", "Testing_Rate")
+
+plot.dailyStat("New York", "People_Tested")
+plot.dailyStatRise("New York", "People_Tested")
+
+plot.dailyStat("New York", "Testing_Rate")
+```
+
+## Hospitalization
+*People_Hospitalized* - Total number of people hospitalized.
+*Hospitalization_Rate* - Total number of people hospitalized * 100/ Number of confirmed cases.
+```{r}
+plot.dailyStat("Oklahoma", "People_Hospitalized")
+plot.dailyStatRise("Oklahoma", "People_Hospitalized")
+
+plot.dailyStat("Oklahoma", "Hospitalization_Rate")
+
+plot.dailyStat("New York", "People_Hospitalized")
+plot.dailyStatRise("New York", "People_Hospitalized")
+
+plot.dailyStat("New York", "Hospitalization_Rate")
+```
 
 ## Split the dataset into the data and the info for usability.
 ```{r}
@@ -106,7 +181,7 @@ nobs <- nrow(US.cases.data)
 # ---- The Curve ----
 
 ```{r}
-state.curve <- function(state, stat = c("cases", "deaths")){
+state.curve <- function(state, stat = c("cases", "deaths"), logScale = T){
   if(stat == "cases"){
     data <- US.cases.data[which(US.cases$Province_State == state),]
   }else if(stat == "deaths"){
@@ -115,19 +190,60 @@ state.curve <- function(state, stat = c("cases", "deaths")){
   data.sum <- colSums(data)
   day.first.case <- min(which(data.sum > 0))
   n.days <- length(data.sum)
-  barplot(data.sum[day.first.case:n.days], 
-          main = paste0("Total COVID-19 ", stat," by date in ", state), 
-          log = "y", las = 2, cex.axis = 1, cex.names = 0.5)
+  
+  if(logScale == T){
+    barplot(data.sum[day.first.case:n.days], 
+            main = paste0("Total COVID-19 ", stat," by date in ", state, ", log scale"), 
+            log = "y", las = 2, cex.axis = 1, cex.names = 0.5)
+  }else{
+    barplot(data.sum[day.first.case:n.days], 
+            main = paste0("Total COVID-19 ", stat," by date in ", state), 
+            las = 2, cex.axis = 1, cex.names = 0.5)
+  }
+}
+state.rise <- function(state, stat = c("cases", "deaths")){
+  if(stat == "cases"){
+    data.thisState <- US.cases.data[which(US.cases$Province_State == state),]
+  }else if(stat == "deaths"){
+    data.thisState <- US.deaths.data[which(US.deaths$Province_State == state),]
+  }
+  
+  data.sum <- colSums(data.thisState)
+  n.days <- ncol(data.thisState)
+  
+  rise.cases <- matrix(ncol = n.days - 1, nrow = 1)
+  colnames(rise.cases) <- colnames(data.thisState)[-1]
+  for(i in 1:ncol(rise.cases) + 1){
+    rise <- data.sum[i] - data.sum[i-1]
+    rise.cases[i-1] <- rise
+  }
+  
+  day.first.case <- min(which(rise.cases > 0))
+  n.days <- length(rise.cases)
+  
+  barplot(rise.cases[,day.first.case:n.days], main = paste0("Rise in COVID-19 ", stat, " by Date in ", state), las = 2, cex.axis = 1, cex.names = 0.5)
 }
 
 state.curve("New York", "cases")
+state.curve("New York", "cases")
 state.curve("New York", "deaths")
+state.rise("New York", "cases")
+state.rise("New York", "deaths")
 
 state.curve("California", "cases")
 state.curve("California", "deaths")
+state.rise("California", "cases")
+state.rise("California", "deaths")
 
 state.curve("Oklahoma", "cases")
 state.curve("Oklahoma", "deaths")
+state.rise("Oklahoma", "cases")
+state.rise("Oklahoma", "deaths")
+
+state.curve("Georgia", "cases")
+state.curve("Georgia", "deaths")
+state.rise("Georgia", "cases")
+state.rise("Georgia", "deaths")
 ```
 
 ```{r}
@@ -141,7 +257,7 @@ county.curve <- function(county, stat = c("cases", "deaths")){
   day.first.case <- min(which(data > 0))
   n.days <- length(data)
   
-barplot(data[day.first.case:n.days], main = paste0("Total COVID-19 ", stat," by date in ", county), log = "y", las = 2, cex.axis = 1, cex.names = 0.5)
+  barplot(data[day.first.case:n.days], main = paste0("Total COVID-19 ", stat," by date in ", county), log = "y", las = 2, cex.axis = 1, cex.names = 0.5)
   
 }
 
@@ -287,10 +403,9 @@ data.merge2 <- merge(data.merge, county_500CitiesData, by = "ID", all.x = F)
 ```{r, fig.width=15, fig.height=15}
 data.cor2 <- cor(data.merge2[,-c(1:2)], use = "complete.obs", method = "spearman")
 corrplot.mixed(data.cor2, upper = 'ellipse', lower = 'number', tl.pos = 'lt', tl.cex = 1, lower.col = "black", number.cex = 0.5)
-corrplot.mixed(data.cor2[1:7,8:42], upper = 'ellipse', lower = 'number', tl.pos = 'lt', tl.cex = 0.5, lower.col = "black", number.cex = 0.25)
 ```
 
-```{r}
+```{r, fig.height = 5, fig.width=5}
 corrplot.mixed(data.cor2[1:7,8:42], upper = 'ellipse', lower = 'number', tl.pos = 'lt', tl.cex = 1, lower.col = "black", number.cex = 0.5)
 ```
 
