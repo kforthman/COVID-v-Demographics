@@ -3,6 +3,7 @@ title: "COVID-19"
 author: "Katie Forthman"
 date: "`r date()`"
 output: html_document
+runtime: shiny
 ---
 
 ```{r}
@@ -89,34 +90,41 @@ todays_report_filename <- daily_filenames[length(daily_filenames)]
 US.todaysReport <- read.csv(
   paste0(data.path, todays_report_filename), 
   header = T, stringsAsFactors = F)
+```
 
-compileStats <- function(state, stat){
-  day <- substring(daily_filenames,1,10)
-  dailystat <- data.frame(day = day, stat = NA)
-  for(i in 1:length(daily_filenames)){
-    daysReport <- read.csv(
-      paste0(data.path, daily_filenames[i]),
-      header = T, stringsAsFactors = F)
-    dailystat[i,"stat"] <- daysReport[daysReport$Province_State == state, stat]
-  }
-  return(dailystat)
+```{r}
+all.states <- c('Alabama', 'Alaska', 'American Samoa', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'Diamond Princess', 'District of Columbia', 'Florida', 'Georgia', 'Grand Princess', 'Guam', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Northern Mariana Islands', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Puerto Rico', 'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virgin Islands', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming')
+all.states.df <- data.frame(Province_State = all.states)
+all.stats <- c("Confirmed", "Deaths", "Recovered", "Active", "Incident_Rate", "People_Tested", "People_Hospitalized", "Mortality_Rate", "Testing_Rate", "Hospitalization_Rate")
+
+compiled.stats <- list()
+for(i in 1:length(daily_filenames)){
+  day <- substring(daily_filenames[i],1,10)
+  data <- read.csv(
+    paste0(data.path, daily_filenames[i]),
+    header = T, stringsAsFactors = F)
+  compiled.stats[[i]] <- merge(all.states.df, data, all.y = F)
+  names(compiled.stats)[i] <- day
 }
+
 ```
 
 ## Functions for compiling and visualizing stats in the daily reports.
 ```{r}
 plot.dailyStat <- function(state, stat){
-  data <- compileStats(state, stat)
-  barplot(data$stat, names.arg = data$day, main = paste0(state, " ", stat), las = 2, cex.axis = 1, cex.names = 0.5)
+  data <- sapply(1:length(daily_filenames), function(x){compiled.stats[[x]][compiled.stats[[x]]$Province_State == state, stat]})
+  names(data) <- daily_filenames
+  barplot(data, main = paste0(state, " ", stat), las = 2, cex.axis = 1, cex.names = 0.5)
 }
 
 plot.dailyStatRise <- function(state, stat){
-  data <- compileStats(state, stat)
+  data <- sapply(1:length(daily_filenames), function(x){compiled.stats[[x]][compiled.stats[[x]]$Province_State == state, stat]})
+  names(data) <- daily_filenames
   
-  rise.stat <- matrix(ncol = nrow(data) - 1, nrow = 1)
-  colnames(rise.stat) <- data$day[-1]
+  rise.stat <- matrix(ncol = length(data) - 1, nrow = 1)
+  colnames(rise.stat) <- names(data)[-1]
   for(i in 1:ncol(rise.stat) + 1){
-    rise <- data$stat[i] - data$stat[i-1]
+    rise <- data[i] - data[i-1]
     rise.stat[i-1] <- rise
   }
   
@@ -124,34 +132,37 @@ plot.dailyStatRise <- function(state, stat){
 }
 ```
 
-## Testing
-*People_Tested* - Total number of people who have been tested.
-*Testing_Rate* - Total number of people tested per 100,000 persons.
-```{r}
-plot.dailyStat("Oklahoma", "People_Tested")
-plot.dailyStatRise("Oklahoma", "People_Tested")
+## Interactive Plots
+**Province_State** - The name of the State within the USA.
+**Country_Region** - The name of the Country (US).
+**Last_Update** - The most recent date the file was pushed.
+**Lat** - Latitude.
+**Long_** - Longitude.
+**Confirmed** - Aggregated confirmed case count for the state.
+**Deaths** - Aggregated Death case count for the state.
+**Recovered** - Aggregated Recovered case count for the state.
+**Active** - Aggregated confirmed cases that have not been resolved (Active = Confirmed - Recovered - Deaths).
+**FIPS** - Federal Information Processing Standards code that uniquely identifies counties within the USA.
+**Incident_Rate** - confirmed cases per 100,000 persons.
+**People_Tested** - Total number of people who have been tested.
+**People_Hospitalized** - Total number of people hospitalized.
+**Mortality_Rate** - Number recorded deaths * 100/ Number confirmed cases.
+**UID** - Unique Identifier for each row entry. 
+**ISO3** - Officialy assigned country code identifiers.
+**Testing_Rate** - Total number of people tested per 100,000 persons.
+**Hospitalization_Rate** - Total number of people hospitalized * 100/ Number of confirmed cases.
+```{r echo = FALSE}
+selectInput("stat", "Select a statistic", choices = all.stats)
+selectInput("state", "Select a state", choices = all.states)
+selectInput("plot.type", "Select plot type", choices = c("Total", "Rise"))
 
-plot.dailyStat("Oklahoma", "Testing_Rate")
-
-plot.dailyStat("New York", "People_Tested")
-plot.dailyStatRise("New York", "People_Tested")
-
-plot.dailyStat("New York", "Testing_Rate")
-```
-
-## Hospitalization
-*People_Hospitalized* - Total number of people hospitalized.
-*Hospitalization_Rate* - Total number of people hospitalized * 100/ Number of confirmed cases.
-```{r}
-plot.dailyStat("Oklahoma", "People_Hospitalized")
-plot.dailyStatRise("Oklahoma", "People_Hospitalized")
-
-plot.dailyStat("Oklahoma", "Hospitalization_Rate")
-
-plot.dailyStat("New York", "People_Hospitalized")
-plot.dailyStatRise("New York", "People_Hospitalized")
-
-plot.dailyStat("New York", "Hospitalization_Rate")
+renderPlot({
+  if(input$plot.type == "Total"){
+    plot.dailyStat(input$state, input$stat)
+  }else if(input$plot.type == "Rise"){
+    plot.dailyStatRise(input$state, input$stat)
+  }
+})
 ```
 
 ## Split the dataset into the data and the info for usability.
@@ -223,27 +234,21 @@ state.rise <- function(state, stat = c("cases", "deaths")){
   
   barplot(rise.cases[,day.first.case:n.days], main = paste0("Rise in COVID-19 ", stat, " by Date in ", state), las = 2, cex.axis = 1, cex.names = 0.5)
 }
+```
 
-state.curve("New York", "cases")
-state.curve("New York", "cases")
-state.curve("New York", "deaths")
-state.rise("New York", "cases")
-state.rise("New York", "deaths")
-
-state.curve("California", "cases")
-state.curve("California", "deaths")
-state.rise("California", "cases")
-state.rise("California", "deaths")
-
-state.curve("Oklahoma", "cases")
-state.curve("Oklahoma", "deaths")
-state.rise("Oklahoma", "cases")
-state.rise("Oklahoma", "deaths")
-
-state.curve("Georgia", "cases")
-state.curve("Georgia", "deaths")
-state.rise("Georgia", "cases")
-state.rise("Georgia", "deaths")
+```{r echo = FALSE}
+selectInput("stat2", "Select a statistic", choices = c("cases", "deaths"))
+selectInput("state2", "Select a state", choices = all.states)
+selectInput("plot.type2", "Select plot type", choices = c("Total", "Total logarithmic", "Rise"))
+renderPlot({
+  if(input$plot.type2 == "Total"){
+    state.curve(input$state2, input$stat2, logScale = F)
+  }else if(input$plot.type2 == "Total logarithmic"){
+    state.curve(input$state2, input$stat2, logScale = T)
+  }else if(input$plot.type2 == "Rise"){
+    state.rise(input$state2, input$stat2)
+  }
+})
 ```
 
 ```{r}
