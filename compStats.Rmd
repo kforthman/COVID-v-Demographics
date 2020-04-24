@@ -3,10 +3,13 @@ title: "COVID-19"
 author: "Katie Forthman"
 date: "`r date()`"
 output: html_document
-runtime: shiny
+#runtime: shiny
 ---
 
+https://kforthman.shinyapps.io/500citiescounties/
+
 ```{r}
+#
 #remove scientific notation
 options(scipen=999)
 ```
@@ -25,6 +28,8 @@ options(scipen=999)
 library(stringr)
 library(corrplot)
 library(shiny)
+library(lme4)
+library(lmerTest)
 ```
 
 # ---- Load neighborhood data ----
@@ -75,7 +80,7 @@ dates.deaths <- proper_date(US.deaths.head[-c(1:12)])
 names(US.cases) <- c(US.cases.head[1,1:11], dates.cases)
 names(US.deaths) <- c(US.deaths.head[1,1:12], dates.deaths)
 
-if(sum(US.cases$UID != US.deaths$UID) > 0){warning("COVID data rows do not match!")}
+if(sum(US.cases$UID != US.deaths$UID, na.rm = T) > 0){warning("COVID data rows do not match!")}
 US.cases$Population <- US.deaths$Population
 US.cases <- US.cases[,c(1:11, ncol(US.cases), 12:(ncol(US.cases)-1))]
 ```
@@ -132,6 +137,25 @@ plot.dailyStatRise <- function(state, stat){
 }
 ```
 
+
+```{r, fig.height=10}
+testing.data.state <- compiled.stats[[length(daily_filenames)]][, c("Province_State", "Testing_Rate")]
+testing.data.state <- testing.data.state[!is.na(testing.data.state$Testing_Rate),]
+testing.data.state <- testing.data.state[order(testing.data.state$Testing_Rate),]
+
+col.state <- rep("pink", nrow(testing.data.state))
+
+avg.test.rate <- mean(testing.data.state$Testing_Rate, na.rm = T)
+
+col.state[testing.data.state$Testing_Rate < avg.test.rate] <- "grey"
+col.state[testing.data.state$Province_State == "Oklahoma"] <- "lightblue"
+
+par(mar = c(5,6,4,2))
+barplot(testing.data.state$Testing_Rate, names.arg = testing.data.state$Province_State, horiz = T, main = "Testing Rate by State", las = 2, cex.axis = 1, cex.names = 0.5, col = col.state, border = F, xlab = "Total number of people tested per 100,000 persons.")
+abline(v = avg.test.rate, col = "red")
+text(x = avg.test.rate + 10, y = 1, labels = "Average Testing Rate", adj = c(0, 0.5), col = "red")
+```
+
 ## Interactive Plots
 **Province_State** - The name of the State within the USA.
 **Country_Region** - The name of the Country (US).
@@ -152,17 +176,17 @@ plot.dailyStatRise <- function(state, stat){
 **Testing_Rate** - Total number of people tested per 100,000 persons.
 **Hospitalization_Rate** - Total number of people hospitalized * 100/ Number of confirmed cases.
 ```{r echo = FALSE}
-selectInput("stat", "Select a statistic", choices = all.stats)
-selectInput("state", "Select a state", choices = all.states)
-selectInput("plot.type", "Select plot type", choices = c("Total", "Rise"))
-
-renderPlot({
-  if(input$plot.type == "Total"){
-    plot.dailyStat(input$state, input$stat)
-  }else if(input$plot.type == "Rise"){
-    plot.dailyStatRise(input$state, input$stat)
-  }
-})
+# selectInput("stat", "Select a statistic", choices = all.stats)
+# selectInput("state", "Select a state", choices = all.states)
+# selectInput("plot.type", "Select plot type", choices = c("Total", "Rise"))
+# 
+# renderPlot({
+#   if(input$plot.type == "Total"){
+#     plot.dailyStat(input$state, input$stat)
+#   }else if(input$plot.type == "Rise"){
+#     plot.dailyStatRise(input$state, input$stat)
+#   }
+# })
 ```
 
 ## Split the dataset into the data and the info for usability.
@@ -237,18 +261,18 @@ state.rise <- function(state, stat = c("cases", "deaths")){
 ```
 
 ```{r echo = FALSE}
-selectInput("stat2", "Select a statistic", choices = c("cases", "deaths"))
-selectInput("state2", "Select a state", choices = all.states)
-selectInput("plot.type2", "Select plot type", choices = c("Total", "Total logarithmic", "Rise"))
-renderPlot({
-  if(input$plot.type2 == "Total"){
-    state.curve(input$state2, input$stat2, logScale = F)
-  }else if(input$plot.type2 == "Total logarithmic"){
-    state.curve(input$state2, input$stat2, logScale = T)
-  }else if(input$plot.type2 == "Rise"){
-    state.rise(input$state2, input$stat2)
-  }
-})
+# selectInput("stat2", "Select a statistic", choices = c("cases", "deaths"))
+# selectInput("state2", "Select a state", choices = all.states)
+# selectInput("plot.type2", "Select plot type", choices = c("Total", "Total logarithmic", "Rise"))
+# renderPlot({
+#   if(input$plot.type2 == "Total"){
+#     state.curve(input$state2, input$stat2, logScale = F)
+#   }else if(input$plot.type2 == "Total logarithmic"){
+#     state.curve(input$state2, input$stat2, logScale = T)
+#   }else if(input$plot.type2 == "Rise"){
+#     state.rise(input$state2, input$stat2)
+#   }
+# })
 ```
 
 ```{r}
@@ -414,5 +438,23 @@ corrplot.mixed(data.cor2, upper = 'ellipse', lower = 'number', tl.pos = 'lt', tl
 corrplot.mixed(data.cor2[1:7,8:42], upper = 'ellipse', lower = 'number', tl.pos = 'lt', tl.cex = 1, lower.col = "black", number.cex = 0.5)
 ```
 
+
+# ----Linear Mixed Effects Model  ----
+
+```{r}
+US.todaysReport.states <- US.todaysReport[!is.na(US.todaysReport$FIPS) & nchar(US.todaysReport$FIPS)<=2,]
+US.todaysReport.states$FIPS <- str_pad(US.todaysReport.states$FIPS, 2, "left", pad = "0")
+
+data.merge2$stateID <- substr(data.merge2$ID,1,2)
+
+data.merge3 <- merge(data.merge2, US.todaysReport.states, by.x = "stateID", by.y = "FIPS")
+
+this.lme <- lmer("total.cases.percap ~ Affluence + Singletons.in.Tract + Seniors.in.Tract + African.Americans.in.Tract + Noncitizens.in.Tract + High.BP + Binge.Drinking + Cancer + Asthma + Heart.Disease + COPD + Smoking + Diabetes + No.Physical.Activity + Obesity + Poor.Sleeping.Habits + Poor.Mental.Health + Testing_Rate + Hospitalization_Rate + (1 | stateID)", data = data.merge3)
+
+print(summary(this.lme), correlation=TRUE)
+
+this.lme.sum <- summary(this.lme)
+
+```
 
 
