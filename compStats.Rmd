@@ -449,6 +449,8 @@ data.merge2$stateID <- substr(data.merge2$ID,1,2)
 
 data.merge3 <- merge(data.merge2, US.todaysReport.states, by.x = "stateID", by.y = "FIPS")
 
+save(data.merge3, file = "county-Demo_and_Covid.Rda")
+
 this.lme <- lmer("total.cases.percap ~ Affluence + Singletons.in.Tract + Seniors.in.Tract + African.Americans.in.Tract + Noncitizens.in.Tract + High.BP + Binge.Drinking + Cancer + Asthma + Heart.Disease + COPD + Smoking + Diabetes + No.Physical.Activity + Obesity + Poor.Sleeping.Habits + Poor.Mental.Health + Testing_Rate + Hospitalization_Rate + (1 | stateID)", data = data.merge3)
 
 print(summary(this.lme), correlation=TRUE)
