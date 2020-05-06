@@ -1,0 +1,248 @@
+---
+title: "COVID-19 Interactive Plots"
+author: "Katie Forthman"
+date: "`r date()`"
+output: 
+  html_document:
+    code_folding: hide
+runtime: shiny
+---
+
+```{r, include = F}
+#remove scientific notation
+options(scipen=999)
+```
+
+```{r, include=FALSE}
+# cd Data/COVID-19 ; git pull ; cd ../../
+# compile
+# git add compStats.html ; git commit -m "Updating data." ; git push origin master
+```
+
+```{r, include = F}
+library(stringr)
+library(corrplot)
+library(shiny)
+library(lme4)
+library(lmerTest)
+library(gtools)
+```
+
+```{r, include = F}
+
+load("Data/US.cases.rda")
+load("Data/US.deaths.rda")
+
+```
+
+```{r, include = F}
+all.states <- c('Alabama', 'Alaska', 'American Samoa', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'Diamond Princess', 'District of Columbia', 'Florida', 'Georgia', 'Grand Princess', 'Guam', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Northern Mariana Islands', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Puerto Rico', 'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virgin Islands', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming')
+```
+
+```{r}
+US.cases.data <- as.matrix(US.cases[,-c(2:12)])
+US.deaths.data <- as.matrix(US.deaths[,-c(2:12)])
+
+rownames(US.cases.data) <- US.cases.data[,1]
+US.cases.data <- US.cases.data[,-1]
+rownames(US.deaths.data) <- US.deaths.data[,1]
+US.deaths.data <- US.deaths.data[,-1]
+
+state.curve <- function(state, stat = c("cases", "deaths"), logScale = T){
+  if(stat == "cases"){
+    data <- US.cases.data[which(US.cases$Province_State == state),]
+  }else if(stat == "deaths"){
+    data <- US.deaths.data[which(US.deaths$Province_State == state),]
+  }
+  data.sum <- colSums(data)
+  day.first.case <- min(which(data.sum > 0))
+  n.days <- length(data.sum)
+  
+  twoweek.col <- c(rep("grey", n.days-day.first.case-13), rep("pink", 14))
+  
+  if(logScale == T){
+    barplot(data.sum[day.first.case:n.days], 
+            main = paste0("Total COVID-19 ", stat," by date in ", state, ", log scale"), 
+            log = "y", las = 2, cex.axis = 1, cex.names = 0.5, border = F, col = twoweek.col)
+  }else{
+    barplot(data.sum[day.first.case:n.days], 
+            main = paste0("Total COVID-19 ", stat," by date in ", state), 
+            las = 2, cex.axis = 1, cex.names = 0.5, border = F, col = twoweek.col)
+  }
+}
+state.rise <- function(state, stat = c("cases", "deaths")){
+  if(stat == "cases"){
+    data.thisState <- US.cases.data[which(US.cases$Province_State == state),]
+  }else if(stat == "deaths"){
+    data.thisState <- US.deaths.data[which(US.deaths$Province_State == state),]
+  }
+  
+  data.sum <- colSums(data.thisState)
+  n.days <- ncol(data.thisState)
+  
+  rise.cases <- matrix(ncol = n.days - 1, nrow = 1)
+  colnames(rise.cases) <- colnames(data.thisState)[-1]
+  for(i in 1:ncol(rise.cases) + 1){
+    rise <- data.sum[i] - data.sum[i-1]
+    rise.cases[i-1] <- rise
+  }
+  
+  day.first.case <- min(which(rise.cases > 0))
+  n.days <- length(rise.cases)
+  
+  twoweek.col <- c(rep("grey", n.days-day.first.case-13), rep("pink", 14))
+  
+  barplot(rise.cases[,day.first.case:n.days], main = paste0("Rise in COVID-19 ", stat, " by Date in ", state), las = 2, cex.axis = 1, cex.names = 0.5, border = F, col = twoweek.col)
+}
+state.rise.avg <- function(state, stat = c("cases", "deaths"), days = 7){
+  if(stat == "cases"){
+    data.thisState <- US.cases.data[which(US.cases$Province_State == state),]
+  }else if(stat == "deaths"){
+    data.thisState <- US.deaths.data[which(US.deaths$Province_State == state),]
+  }
+  
+  data.sum <- colSums(data.thisState)
+  n.days <- ncol(data.thisState)
+  
+  rise.cases <- matrix(ncol = n.days - 1, nrow = 1)
+  colnames(rise.cases) <- colnames(data.thisState)[-1]
+  for(i in 1:ncol(rise.cases) + 1){
+    rise <- data.sum[i] - data.sum[i-1]
+    rise.cases[i-1] <- rise
+  }
+  
+  avg.rise.cases <- matrix(ncol = n.days - 1, nrow = 1)
+  colnames(avg.rise.cases) <- colnames(data.thisState)[-1]
+  wind <- ifelse(even(days), days / 2, (days - 1) / 2)
+  for(i in 1:ncol(avg.rise.cases)){
+    beg.idx <- ifelse(i < 1 + wind, 1, i - wind)
+    end.idx <- ifelse(i > ncol(avg.rise.cases) - wind, ncol(avg.rise.cases) , i + wind)
+    avg.rise <- mean(rise.cases[beg.idx:end.idx])
+    avg.rise.cases[i] <- avg.rise
+  }
+  
+  day.first.case <- min(which(avg.rise.cases > 0))
+  n.days <- length(avg.rise.cases)
+  
+  twoweek.col <- c(rep("grey", n.days-day.first.case-13), rep("pink", 14))
+  
+  barplot(avg.rise.cases[,day.first.case:n.days], main = paste0(days, " day rolling average Rise in COVID-19 ", stat, " by Date in ", state), las = 2, cex.axis = 1, cex.names = 0.5, col = twoweek.col, border = F)
+}
+```
+
+```{r echo = FALSE}
+selectInput("stat2", "Select a statistic", choices = c("cases", "deaths"))
+selectInput("state2", "Select a state", choices = all.states)
+selectInput("plot.type2", "Select plot type", choices = c("Total", "Total logarithmic", "Rise", "Rolling average rise"))
+renderPlot({
+  if(input$plot.type2 == "Total"){
+    state.curve(input$state2, input$stat2, logScale = F)
+  }else if(input$plot.type2 == "Total logarithmic"){
+    state.curve(input$state2, input$stat2, logScale = T)
+  }else if(input$plot.type2 == "Rise"){
+    state.rise(input$state2, input$stat2)
+  }else if(input$plot.type2 == "Rolling average rise"){
+    state.rise.avg(input$state2, input$stat2, days = 7)
+  }
+})
+```
+
+```{r, include=F}
+
+load("Data/daily_filenames.rda")
+load("Data/compiled.stats.rda")
+
+```
+
+```{r}
+all.states <- c('Alabama', 'Alaska', 'American Samoa', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'Diamond Princess', 'District of Columbia', 'Florida', 'Georgia', 'Grand Princess', 'Guam', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Northern Mariana Islands', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Puerto Rico', 'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virgin Islands', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming')
+all.stats <- c("Confirmed", "Deaths", "Recovered", "Active", "Incident_Rate", "People_Tested", "People_Hospitalized", "Mortality_Rate", "Testing_Rate", "Hospitalization_Rate")
+
+## Functions for compiling and visualizing stats in the daily reports.
+plot.dailyStat <- function(state, stat){
+  data <- sapply(1:length(daily_filenames), function(x){compiled.stats[[x]][compiled.stats[[x]]$Province_State == state, stat]})
+  names(data) <- daily_filenames
+  
+  twoweek.col <- c(rep("grey", length(data) - 14), rep("pink", 14))
+  
+  barplot(data, col = twoweek.col, main = paste0(state, " ", stat), las = 2, cex.axis = 1, cex.names = 0.5, border = F)
+}
+
+plot.dailyStatRise <- function(state, stat){
+  data <- sapply(1:length(daily_filenames), function(x){compiled.stats[[x]][compiled.stats[[x]]$Province_State == state, stat]})
+  names(data) <- daily_filenames
+  
+  rise.stat <- matrix(ncol = length(data) - 1, nrow = 1)
+  colnames(rise.stat) <- names(data)[-1]
+  for(i in 1:ncol(rise.stat) + 1){
+    rise <- data[i] - data[i-1]
+    rise.stat[i-1] <- rise
+  }
+  
+  twoweek.col <- c(rep("grey", length(rise.stat) - 14), rep("pink", 14))
+  
+  barplot(rise.stat[1,], col = twoweek.col, main = paste0(state, " rise in ",stat), las = 2, cex.axis = 1, cex.names = 0.5, border = F)
+}
+
+plot.dailyStatRise.avg <- function(state, stat, days = 7){
+  data <- sapply(1:length(daily_filenames), function(x){compiled.stats[[x]][compiled.stats[[x]]$Province_State == state, stat]})
+  names(data) <- daily_filenames
+  
+  rise.stat <- matrix(ncol = length(data) - 1, nrow = 1)
+  colnames(rise.stat) <- names(data)[-1]
+  for(i in 1:ncol(rise.stat) + 1){
+    rise <- data[i] - data[i-1]
+    rise.stat[i-1] <- rise
+  }
+  
+    avg.rise.cases <- matrix(ncol = length(data) - 1, nrow = 1)
+  colnames(avg.rise.cases) <- names(data)[-1]
+  wind <- ifelse(even(days), days / 2, (days - 1) / 2)
+  for(i in 1:ncol(avg.rise.cases)){
+    beg.idx <- ifelse(i < 1 + wind, 1, i - wind)
+    end.idx <- ifelse(i > ncol(avg.rise.cases) - wind, ncol(avg.rise.cases) , i + wind)
+    avg.rise <- mean(rise.stat[beg.idx:end.idx])
+    avg.rise.cases[i] <- avg.rise
+  }
+  
+  twoweek.col <- c(rep("grey", length(avg.rise.cases) - 14), rep("pink", 14))
+  
+  barplot(avg.rise.cases[1,], col = twoweek.col,
+          main = paste0(state, ", ", days, "-day rolling average rise in ",stat), 
+          las = 2, cex.axis = 1, cex.names = 0.5, border = F)
+}
+```
+
+**Province_State** - The name of the State within the USA.
+**Country_Region** - The name of the Country (US).
+**Last_Update** - The most recent date the file was pushed.
+**Lat** - Latitude.
+**Long_** - Longitude.
+**Confirmed** - Aggregated confirmed case count for the state.
+**Deaths** - Aggregated Death case count for the state.
+**Recovered** - Aggregated Recovered case count for the state.
+**Active** - Aggregated confirmed cases that have not been resolved (Active = Confirmed - Recovered - Deaths).
+**FIPS** - Federal Information Processing Standards code that uniquely identifies counties within the USA.
+**Incident_Rate** - confirmed cases per 100,000 persons.
+**People_Tested** - Total number of people who have been tested.
+**People_Hospitalized** - Total number of people hospitalized.
+**Mortality_Rate** - Number recorded deaths * 100/ Number confirmed cases.
+**UID** - Unique Identifier for each row entry. 
+**ISO3** - Officialy assigned country code identifiers.
+**Testing_Rate** - Total number of people tested per 100,000 persons.
+**Hospitalization_Rate** - Total number of people hospitalized * 100/ Number of confirmed cases.
+```{r echo = FALSE}
+selectInput("stat", "Select a statistic", choices = all.stats)
+selectInput("state", "Select a state", choices = all.states)
+selectInput("plot.type", "Select plot type", choices = c("Total", "Rise", "Rolling avg rise"))
+
+renderPlot({
+  if(input$plot.type == "Total"){
+    plot.dailyStat(input$state, input$stat)
+  }else if(input$plot.type == "Rise"){
+    plot.dailyStatRise(input$state, input$stat)
+  }else if(input$plot.type == "Rolling avg rise"){
+    plot.dailyStatRise.avg(input$state, input$stat)
+  }
+})
+```

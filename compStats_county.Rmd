@@ -1,0 +1,65 @@
+---
+title: "compStats_interactive"
+author: "Katie Forthman"
+date: "`r date()`"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r, include = F}
+#
+#remove scientific notation
+options(scipen=999)
+```
+
+```{r, include=FALSE}
+# cd Data/COVID-19 ; git pull ; cd ../../
+# compile
+# git add compStats.html ; git commit -m "Updating data." ; git push origin master
+# 
+# 
+```
+
+```{r, include = F}
+library(stringr)
+library(corrplot)
+library(shiny)
+library(lme4)
+library(lmerTest)
+library(gtools)
+```
+
+```{r, include = F}
+
+load("Data/US.cases.rda")
+load("Data/US.deaths.rda")
+
+```
+
+```{r}
+US.cases.data <- as.matrix(US.cases[,-c(2:12)])
+US.deaths.data <- as.matrix(US.deaths[,-c(2:12)])
+
+rownames(US.cases.data) <- US.cases.data[,1]
+US.cases.data <- US.cases.data[,-1]
+rownames(US.deaths.data) <- US.deaths.data[,1]
+US.deaths.data <- US.deaths.data[,-1]
+
+county.curve <- function(county, stat = c("cases", "deaths")){
+  if(stat == "cases"){
+    data <- US.cases.data[which(US.cases$Admin2 == county),]
+  }else if(stat == "deaths"){
+    data <- US.deaths.data[which(US.deaths$Admin2 == county),]
+  }
+  
+  day.first.case <- min(which(data > 0))
+  n.days <- length(data)
+  
+  barplot(data[day.first.case:n.days], main = paste0("Total COVID-19 ", stat," by date in ", county), log = "y", las = 2, cex.axis = 1, cex.names = 0.5, border = F)
+  
+}
+
+county.curve("Tulsa", "cases")
+county.curve("Tulsa", "deaths")
+```

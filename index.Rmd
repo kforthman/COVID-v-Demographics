@@ -1,0 +1,112 @@
+---
+title: "COVID-19 Analysis"
+author: "Katie Forthman"
+date: "`r date()`"
+output: 
+  html_document:
+    code_folding: hide
+---
+## Click here for interactive plots:
+
+https://kforthman.shinyapps.io/COVID19_Interactive_Plots/
+
+## Click here to see how cities and counties overlap:
+
+https://kforthman.shinyapps.io/500citiescounties
+
+```{r, include = F}
+#remove scientific notation
+options(scipen=999)
+```
+
+```{r, include=FALSE}
+# cd Data/COVID-19 ; git pull ; cd ../../
+# compile
+# git add compStats.html ; git commit -m "Updating data." ; git push origin master
+```
+
+```{r, include = F}
+library(stringr)
+library(corrplot)
+library(shiny)
+library(lme4)
+library(lmerTest)
+library(gtools)
+```
+
+```{r, include = F}
+
+load("Data/county.Demo_and_Covid.500counties.rda")
+load("Data/county.Demo_and_Covid.allcounties.rda")
+
+```
+
+# Compare COVID stats to Neighborhood Factors
+```{r}
+data.cor <- cor(county.Demo_and_Covid.allcounties[,-1], use = "complete.obs", method = "spearman")
+corrplot.mixed(data.cor, upper = 'ellipse', lower = 'number', tl.pos = 'lt', tl.cex = 1, lower.col = "black", number.cex = 0.5)
+```
+
+# Compare COVID stats to 500 cities data and Neighborhood Factors
+```{r, fig.width=15, fig.height=15}
+data.cor2 <- cor(county.Demo_and_Covid.500counties[,-c(1:2)], use = "complete.obs", method = "spearman")
+corrplot.mixed(data.cor2, upper = 'ellipse', lower = 'number', tl.pos = 'lt', tl.cex = 1, lower.col = "black", number.cex = 0.5)
+```
+
+```{r, fig.height = 5, fig.width=15}
+corrplot.mixed(data.cor2[7:13,c(1:5, 14:42,6)], upper = 'ellipse', tl.pos = 'lt', tl.cex = 1, lower.col = "black", number.cex = 0.5)
+```
+
+
+# ----Linear Mixed Effects Model  ----
+
+```{r}
+this.lme <- lmer("total.cases.percap ~ Affluence + Singletons.in.Tract + Seniors.in.Tract + African.Americans.in.Tract + Noncitizens.in.Tract + High.BP + Binge.Drinking + Cancer + Asthma + Heart.Disease + COPD + Smoking + Diabetes + No.Physical.Activity + Obesity + Poor.Sleeping.Habits + Poor.Mental.Health + Testing_Rate + Hospitalization_Rate + (1 | stateID)", data = county.Demo_and_Covid.500counties)
+
+print(summary(this.lme), correlation=TRUE)
+```
+
+```{r, include=FALSE}
+
+load("Data/daily_filenames.rda")
+load("Data/compiled.stats.rda")
+
+```
+
+## Testing Rate
+```{r, fig.height=10}
+testing.data.state <- compiled.stats[[length(daily_filenames)]][, c("Province_State", "Testing_Rate")]
+testing.data.state <- testing.data.state[!is.na(testing.data.state$Testing_Rate),]
+testing.data.state <- testing.data.state[order(testing.data.state$Testing_Rate),]
+
+col.state <- rep("pink", nrow(testing.data.state))
+
+avg.test.rate <- mean(testing.data.state$Testing_Rate, na.rm = T)
+
+col.state[testing.data.state$Testing_Rate < avg.test.rate] <- "grey"
+col.state[testing.data.state$Province_State == "Oklahoma"] <- "lightblue"
+
+par(mar = c(5,6,4,2))
+barplot(testing.data.state$Testing_Rate, names.arg = testing.data.state$Province_State, horiz = T, main = "Testing Rate by State", las = 2, cex.axis = 1, cex.names = 0.5, col = col.state, border = F, xlab = "Total number of people tested per 100,000 persons.")
+abline(v = avg.test.rate, col = "red")
+text(x = avg.test.rate + 10, y = 1, labels = "Average Testing Rate", adj = c(0, 0.5), col = "red")
+```
+
+```{r, include = F}
+
+load("Data/US.total.rda")
+
+```
+
+```{r}
+day.first.case <- min(which(US.total$cases.total > 100))
+n.days <- nrow(US.total)
+
+par(mar = c(5,5,4,2))
+barplot(US.total$cases.total[day.first.case:n.days], main = "Total COVID-19 cases by Date in US", las = 2, cex.axis = 1, cex.names = 0.5)
+barplot(US.total$cases.total[day.first.case:n.days], main = "Total COVID-19 cases by Date in US, log scale", las = 2, cex.axis = 1, cex.names = 0.5, log = "y")
+barplot(US.total$deaths.total[day.first.case:n.days], main = "Total COVID-19 deaths by Date in US", las = 2, cex.axis = 1, cex.names = 0.5)
+barplot(US.total$deaths.total[day.first.case:n.days], main = "Total COVID-19 deaths by Date in US, log scale", las = 2, cex.axis = 1, cex.names = 0.5, log = "y")
+barplot(US.total$rise.cases.total[day.first.case:n.days], main = "Rise in Cases of COVID-19 by Date in US", las = 2, cex.axis = 1, cex.names = 0.5)
+barplot(US.total$rise.deaths.total[day.first.case:n.days], main = "Rise in Deaths of COVID-19 by Date in US", las = 2, cex.axis = 1, cex.names = 0.5)
+```

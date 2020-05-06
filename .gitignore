@@ -1,6 +1,8 @@
-Data
+rsconnect
 
 .DS_Store
+
+.Rhistory
 
 cdc_data_var.rda
 

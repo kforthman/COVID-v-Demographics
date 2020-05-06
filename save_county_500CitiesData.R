@@ -15,7 +15,7 @@ if(Sys.info()["nodename"] == local.nodename){setwd(local.ed)}
 # Correlate 500 cities features to the factor scores.
 library(stringr)
 
-cdc_data_var_filename <- "cdc_data_var.rda"
+cdc_data_var_filename <- "Data/cdc_data_var.rda"
 
 if(!file.exists(cdc_data_var_filename)){
   cdc_data <- read.csv("../Neighborhood_Analysis/Tract/data/500_Cities__Census_Tract-level_Data__GIS_Friendly_Format_.csv", stringsAsFactors = F)
