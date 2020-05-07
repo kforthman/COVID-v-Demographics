@@ -4,6 +4,8 @@ Data/COVID-19
 
 .DS_Store
 
+.RData
+
 .Rhistory
 
 cdc_data_var.rda
