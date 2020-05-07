@@ -22,7 +22,7 @@ options(scipen=999)
 ```{r, include=FALSE}
 # cd Data/COVID-19 ; git pull ; cd ../../
 # compile
-# git add compStats.html ; git commit -m "Updating data." ; git push origin master
+# git add index.html ; git commit -m "Updating data." ; git push origin master
 ```
 
 ```{r, include = F}
@@ -98,15 +98,43 @@ load("Data/US.total.rda")
 
 ```
 
+Pink highlights the last 14 days.
+
 ```{r}
 day.first.case <- min(which(US.total$cases.total > 100))
 n.days <- nrow(US.total)
 
+twoweek.col <- c(rep("grey", n.days-day.first.case-13), rep("pink", 14))
+
 par(mar = c(5,5,4,2))
-barplot(US.total$cases.total[day.first.case:n.days], main = "Total COVID-19 cases by Date in US", las = 2, cex.axis = 1, cex.names = 0.5)
-barplot(US.total$cases.total[day.first.case:n.days], main = "Total COVID-19 cases by Date in US, log scale", las = 2, cex.axis = 1, cex.names = 0.5, log = "y")
-barplot(US.total$deaths.total[day.first.case:n.days], main = "Total COVID-19 deaths by Date in US", las = 2, cex.axis = 1, cex.names = 0.5)
-barplot(US.total$deaths.total[day.first.case:n.days], main = "Total COVID-19 deaths by Date in US, log scale", las = 2, cex.axis = 1, cex.names = 0.5, log = "y")
-barplot(US.total$rise.cases.total[day.first.case:n.days], main = "Rise in Cases of COVID-19 by Date in US", las = 2, cex.axis = 1, cex.names = 0.5)
-barplot(US.total$rise.deaths.total[day.first.case:n.days], main = "Rise in Deaths of COVID-19 by Date in US", las = 2, cex.axis = 1, cex.names = 0.5)
+barplot(US.total$cases.total[day.first.case:n.days], 
+        names = US.total$day[day.first.case:n.days],
+        main = "Total COVID-19 cases by Date in US", 
+        las = 2, cex.axis = 1, cex.names = 0.5,
+        col = twoweek.col, border = F)
+barplot(US.total$cases.total[day.first.case:n.days], 
+        names = US.total$day[day.first.case:n.days],
+        main = "Total COVID-19 cases by Date in US, log scale", 
+        las = 2, cex.axis = 1, cex.names = 0.5, log = "y",
+        col = twoweek.col, border = F)
+barplot(US.total$deaths.total[day.first.case:n.days], 
+        names = US.total$day[day.first.case:n.days],
+        main = "Total COVID-19 deaths by Date in US", 
+        las = 2, cex.axis = 1, cex.names = 0.5,
+        col = twoweek.col, border = F)
+barplot(US.total$deaths.total[day.first.case:n.days], 
+        names = US.total$day[day.first.case:n.days],
+        main = "Total COVID-19 deaths by Date in US, log scale", 
+        las = 2, cex.axis = 1, cex.names = 0.5, log = "y",
+        col = twoweek.col, border = F)
+barplot(US.total$rise.cases.total[day.first.case:n.days], 
+        names = US.total$day[day.first.case:n.days],
+        main = "Rise in Cases of COVID-19 by Date in US", 
+        las = 2, cex.axis = 1, cex.names = 0.5,
+        col = twoweek.col, border = F)
+barplot(US.total$rise.deaths.total[day.first.case:n.days], 
+        names = US.total$day[day.first.case:n.days],
+        main = "Rise in Deaths of COVID-19 by Date in US", 
+        las = 2, cex.axis = 1, cex.names = 0.5,
+        col = twoweek.col, border = F)
 ```

@@ -16,7 +16,7 @@ options(scipen=999)
 ```{r, include=FALSE}
 # cd Data/COVID-19 ; git pull ; cd ../../
 # compile
-# git add compStats.html ; git commit -m "Updating data." ; git push origin master
+# git add index.html ; git commit -m "Updating data." ; git push origin master
 ```
 
 ```{r, include = F}
@@ -63,11 +63,11 @@ state.curve <- function(state, stat = c("cases", "deaths"), logScale = T){
   if(logScale == T){
     barplot(data.sum[day.first.case:n.days], 
             main = paste0("Total COVID-19 ", stat," by date in ", state, ", log scale"), 
-            log = "y", las = 2, cex.axis = 1, cex.names = 0.5, border = F, col = twoweek.col)
+            log = "y", las = 2, cex.axis = 1, cex.names = 1, border = F, col = twoweek.col)
   }else{
     barplot(data.sum[day.first.case:n.days], 
             main = paste0("Total COVID-19 ", stat," by date in ", state), 
-            las = 2, cex.axis = 1, cex.names = 0.5, border = F, col = twoweek.col)
+            las = 2, cex.axis = 1, cex.names = 1, border = F, col = twoweek.col)
   }
 }
 state.rise <- function(state, stat = c("cases", "deaths")){
@@ -92,7 +92,7 @@ state.rise <- function(state, stat = c("cases", "deaths")){
   
   twoweek.col <- c(rep("grey", n.days-day.first.case-13), rep("pink", 14))
   
-  barplot(rise.cases[,day.first.case:n.days], main = paste0("Rise in COVID-19 ", stat, " by Date in ", state), las = 2, cex.axis = 1, cex.names = 0.5, border = F, col = twoweek.col)
+  barplot(rise.cases[,day.first.case:n.days], main = paste0("Rise in COVID-19 ", stat, " by Date in ", state), las = 2, cex.axis = 1, cex.names = 1, border = F, col = twoweek.col)
 }
 state.rise.avg <- function(state, stat = c("cases", "deaths"), days = 7){
   if(stat == "cases"){
@@ -126,11 +126,13 @@ state.rise.avg <- function(state, stat = c("cases", "deaths"), days = 7){
   
   twoweek.col <- c(rep("grey", n.days-day.first.case-13), rep("pink", 14))
   
-  barplot(avg.rise.cases[,day.first.case:n.days], main = paste0(days, " day rolling average Rise in COVID-19 ", stat, " by Date in ", state), las = 2, cex.axis = 1, cex.names = 0.5, col = twoweek.col, border = F)
+  barplot(avg.rise.cases[,day.first.case:n.days], main = paste0(days, " day rolling average Rise in COVID-19 ", stat, " by Date in ", state), las = 2, cex.axis = 1, cex.names = 1, col = twoweek.col, border = F)
 }
 ```
 
-```{r echo = FALSE}
+Pink highlights the last 14 days.
+
+```{r echo = FALSE, fig.height = 5, fig.width=15}
 selectInput("stat2", "Select a statistic", choices = c("cases", "deaths"))
 selectInput("state2", "Select a state", choices = all.states)
 selectInput("plot.type2", "Select plot type", choices = c("Total", "Total logarithmic", "Rise", "Rolling average rise"))
@@ -151,6 +153,7 @@ renderPlot({
 
 load("Data/daily_filenames.rda")
 load("Data/compiled.stats.rda")
+daily_filenames <- substr(daily_filenames, 1, 10)
 
 ```
 
@@ -165,7 +168,7 @@ plot.dailyStat <- function(state, stat){
   
   twoweek.col <- c(rep("grey", length(data) - 14), rep("pink", 14))
   
-  barplot(data, col = twoweek.col, main = paste0(state, " ", stat), las = 2, cex.axis = 1, cex.names = 0.5, border = F)
+  barplot(data, col = twoweek.col, main = paste0(state, " ", stat), las = 2, cex.axis =1, cex.names = .75, border = F)
 }
 
 plot.dailyStatRise <- function(state, stat){
@@ -181,7 +184,7 @@ plot.dailyStatRise <- function(state, stat){
   
   twoweek.col <- c(rep("grey", length(rise.stat) - 14), rep("pink", 14))
   
-  barplot(rise.stat[1,], col = twoweek.col, main = paste0(state, " rise in ",stat), las = 2, cex.axis = 1, cex.names = 0.5, border = F)
+  barplot(rise.stat[1,], col = twoweek.col, main = paste0(state, " rise in ",stat), las = 2, cex.axis =1, cex.names = .75, border = F)
 }
 
 plot.dailyStatRise.avg <- function(state, stat, days = 7){
@@ -209,7 +212,7 @@ plot.dailyStatRise.avg <- function(state, stat, days = 7){
   
   barplot(avg.rise.cases[1,], col = twoweek.col,
           main = paste0(state, ", ", days, "-day rolling average rise in ",stat), 
-          las = 2, cex.axis = 1, cex.names = 0.5, border = F)
+          las = 2, cex.axis =1, cex.names = .75, border = F)
 }
 ```
 

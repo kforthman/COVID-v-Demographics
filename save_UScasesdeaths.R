@@ -1,4 +1,11 @@
 #system("cd Data/COVID-19 ; git pull ; cd ../../")
+library(stringr)
+library(corrplot)
+library(shiny)
+library(lme4)
+library(lmerTest)
+library(gtools)
+setwd("/Volumes/T1000/Analysis/kforthman/COVID19")
 
 data.path <- "Data/COVID-19/csse_covid_19_data/csse_covid_19_time_series/"
 
@@ -54,7 +61,6 @@ todays_report_filename <- daily_filenames[length(daily_filenames)]
 US.todaysReport <- read.csv(
   paste0(data.path, todays_report_filename), 
   header = T, stringsAsFactors = F)
-
 
 save(daily_filenames, file = "Data/daily_filenames.rda")
 save(US.todaysReport, file = "Data/US.todaysReport.rda")
