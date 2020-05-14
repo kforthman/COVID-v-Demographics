@@ -5,7 +5,8 @@ library(shiny)
 library(lme4)
 library(lmerTest)
 library(gtools)
-setwd("/Volumes/T1000/Analysis/kforthman/COVID19")
+
+
 
 data.path <- "Data/COVID-19/csse_covid_19_data/csse_covid_19_time_series/"
 
