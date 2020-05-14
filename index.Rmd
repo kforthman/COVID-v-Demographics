@@ -66,6 +66,12 @@ this.lme <- lmer("total.cases.percap ~ Affluence + Singletons.in.Tract + Seniors
 print(summary(this.lme), correlation=TRUE)
 ```
 
+```{r}
+this.lme <- lmer("total.cases.percap ~ Affluence + Singletons.in.Tract + Seniors.in.Tract + African.Americans.in.Tract + Noncitizens.in.Tract + High.BP + Binge.Drinking + Cancer + Asthma + Heart.Disease + COPD + Smoking + Diabetes + No.Physical.Activity + Obesity + Poor.Sleeping.Habits + Poor.Mental.Health + (1 | stateID)", data = county.Demo_and_Covid.500counties)
+
+print(summary(this.lme), correlation=TRUE)
+```
+
 ```{r, include=FALSE}
 
 load("Data/daily_filenames.rda")
