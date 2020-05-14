@@ -25,3 +25,13 @@ saveCensusPolygon.R
 tractSPDF_500Cities.rds
 
 write_tract_file.R
+
+err.log
+
+out.log
+
+run_R.Rscript
+
+run_run_R.ssub
+
+xvfb-run-safe
