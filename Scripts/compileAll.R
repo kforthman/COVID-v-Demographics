@@ -12,9 +12,9 @@ if(Sys.info()["nodename"] == local.nodename){setwd(local.ed)}
 # Pull new data
 #system("cd Data/COVID-19 ; git pull ; cd ../../")
 
-source("save_UScasesdeaths.R")
-rmarkdown::render("index.Rmd", output_file = "index.html", clean = T)
-rsconnect::deployApp("interactive_plots.Rmd",
+source("Scripts/save_UScasesdeaths.R")
+rmarkdown::render("Scripts/index.Rmd", output_file = "../index.html", clean = T)
+rsconnect::deployApp("Scripts/interactive_plots.Rmd",
                      appFiles = c("Data/US.cases.rda",
                                   "Data/US.deaths.rda",
                                   "Data/daily_filenames.rda",

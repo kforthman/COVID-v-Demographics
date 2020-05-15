@@ -36,8 +36,8 @@ library(gtools)
 
 ```{r, include = F}
 
-load("Data/county.Demo_and_Covid.500counties.rda")
-load("Data/county.Demo_and_Covid.allcounties.rda")
+load("../Data/county.Demo_and_Covid.500counties.rda")
+load("../Data/county.Demo_and_Covid.allcounties.rda")
 
 ```
 
@@ -74,8 +74,8 @@ print(summary(this.lme), correlation=TRUE)
 
 ```{r, include=FALSE}
 
-load("Data/daily_filenames.rda")
-load("Data/compiled.stats.rda")
+load("../Data/daily_filenames.rda")
+load("../Data/compiled.stats.rda")
 
 ```
 
@@ -100,7 +100,7 @@ text(x = avg.test.rate + 10, y = 1, labels = "Average Testing Rate", adj = c(0, 
 
 ```{r, include = F}
 
-load("Data/US.total.rda")
+load("../Data/US.total.rda")
 
 ```
 
